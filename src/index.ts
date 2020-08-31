@@ -24,14 +24,14 @@ runPreInstallScript();
 // 4 - Execute yarn install in the store
 runYarnInstallInStore();
 
-// 5 - Run  post-install scripts
-runPostInstallScripts();
-
-// 6 - Copy yarn.lock back, so changes can be commited
+// 5 - Copy yarn.lock back, so changes can be commited
 hidrateYarnLockFile();
 
-// 7 - Setup links from the repo to the store
+// 6 - Setup links from the repo to the store
 linkRepoNodeModuleFoldersToStore();
+
+// 7 - Run  post-install scripts
+runPostInstallScripts();
 
 function linkRepoNodeModuleFoldersToStore() {
   setupDependencyBetweenWorkspaces();
