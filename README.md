@@ -1,15 +1,23 @@
-Description:
-- Wrap yarn to improve its strictness
+# yarn-strict
+
+Drop in replacement for `yarn install` for repositories using yarn@v1.
+Why? It adds more strictness which prevent many phantom dependency issues.
 
 Usage:
+Instead of
+
+```
+yarn
+```
+
+or
+
+```
+yarn install
+```
+
+run
+
 ```
 npx yarn-strict
 ```
-
-ToDo:
-
-- Implement strictness
-- Support lifecycle scripts
-- Support incremental installation
-- Support adding/upgrading packages
-- Support husky
