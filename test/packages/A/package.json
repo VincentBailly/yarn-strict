@@ -1,0 +1,14 @@
+{
+  "name": "A",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "bin": "./index.js",
+  "dependencies": {
+    "B": "*",
+    "E": "*",
+    "@scoped/C": "*",
+    "lodash": "^4.17.20",
+    "execa": "^4.0.0"
+  }
+}

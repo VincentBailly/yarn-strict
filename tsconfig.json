@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+      "target": "ESNext",
+      "lib": ["ESNext"],
+      "strict": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "moduleResolution": "node",
+      "preserveWatchOutput": true,
+      "rootDir": "./src",
+      "outDir": "./lib",
+      "module": "commonjs",
+      "skipLibCheck": true,
+    },
+    "include": ["./src"]
+  }
+  
