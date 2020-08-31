@@ -198,7 +198,7 @@ function runPostInstallScripts() {
 }
 
 function runYarnInstallInStore() {
-  execSync(`yarn install ${process.argv.slice(2).join(" ")}`, {
+  execSync(`npx midgard-yarn install ${process.argv.slice(2).join(" ")}`, {
     stdio: "inherit",
     cwd: path.join(process.cwd(), "node_modules", ".store"),
   });
