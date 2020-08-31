@@ -1,6 +1,6 @@
 # yarn-strict
 
-Drop in replacement for `yarn install` for repositories using yarn@v1.
+Drop in replacement for `yarn install` for repositories using workspaces with yarn@v1.
 Why? It adds more strictness which prevent many phantom dependency issues.
 
 Usage:
