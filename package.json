@@ -5,6 +5,7 @@
   "main": "lib/index.js",
   "author": "Vincent Bailly <vincent.bailly@microsoft.com>",
   "license": "MIT",
+  "repository": "VincentBailly/yarn-strict",
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",

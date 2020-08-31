@@ -13,6 +13,7 @@ const distPJ = {
   main: pj.main,
   author: pj.author,
   licence: pj.licence,
+  repository: pj.repository,
 };
 
 fs.writeFileSync(
