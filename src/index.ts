@@ -137,7 +137,14 @@ function setupBinScripts(
     );
     Object.keys(binObject).forEach((b) => {
       const binName = b;
+      const binLocationForSh = `"$basedir/${path
+        .relative(
+          path.join(process.cwd(), workspace.location, "node_modules", ".bin"),
+          path.join(dependencyLocation, binObject[b])
+        )
+        .replace(/\\/g, "/")}"`;
       const binLocation = path.join(dependencyLocation, binObject[b]);
+
       fs.writeFileSync(
         path.join(
           process.cwd(),
@@ -146,7 +153,9 @@ function setupBinScripts(
           ".bin",
           `${binName}`
         ),
-        `#!/bin/sh\nnode ${binLocation} "$@"`
+        `#!/bin/sh
+basedir=$(dirname "$(echo "$0" | sed -e 's,\\\\,/,g')")
+node ${binLocationForSh} "$@"`
       );
       fs.writeFileSync(
         path.join(
