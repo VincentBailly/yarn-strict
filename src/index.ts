@@ -179,11 +179,13 @@ function hidrateYarnLockFile() {
 }
 
 function cleanNodeModuleFolders() {
-  // move store to temporary place so it is not cleaned;
-  fs.renameSync(
-    path.join(process.cwd(), "node_modules", ".store"),
-    path.join(process.cwd(), ".tmpYarnStore")
-  );
+  const storePath = path.join(process.cwd(), "node_modules", ".store");
+  const incremental = fs.existsSync(storePath);
+
+  if (incremental) {
+    // move store to temporary place so it is not cleaned;
+    fs.renameSync(storePath, path.join(process.cwd(), ".tmpYarnStore"));
+  }
 
   workspaces.forEach((workspace) => {
     const oldNodeModuleFolder = path.join(
@@ -196,13 +198,15 @@ function cleanNodeModuleFolders() {
     }
   });
 
-  fs.mkdirSync(path.join(process.cwd(), "node_modules"));
+  if (incremental) {
+    fs.mkdirSync(path.join(process.cwd(), "node_modules"));
 
-  // move back store
-  fs.renameSync(
-    path.join(process.cwd(), ".tmpYarnStore"),
-    path.join(process.cwd(), "node_modules", ".store")
-  );
+    // move back store
+    fs.renameSync(
+      path.join(process.cwd(), ".tmpYarnStore"),
+      path.join(process.cwd(), "node_modules", ".store")
+    );
+  }
 }
 
 function runPostInstallScripts() {
