@@ -145,18 +145,20 @@ function setupBinScripts(
         .replace(/\\/g, "/")}"`;
       const binLocation = path.join(dependencyLocation, binObject[b]);
 
-      fs.writeFileSync(
-        path.join(
-          process.cwd(),
+      const shBin = path.join( process.cwd(),
           workspace.location,
           "node_modules",
           ".bin",
           `${binName}`
-        ),
+        );
+
+      fs.writeFileSync(
+        shBin,
         `#!/bin/sh
 basedir=$(dirname "$(echo "$0" | sed -e 's,\\\\,/,g')")
 node ${binLocationForSh} "$@"`
       );
+      fs.chmodSync(shBin, 0o777);
       fs.writeFileSync(
         path.join(
           process.cwd(),
