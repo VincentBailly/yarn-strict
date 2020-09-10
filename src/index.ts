@@ -2,6 +2,7 @@ import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { getWorkspaces, Workspace } from "./workspaces";
+import * as cmdShim from "@zkochan/cmd-shim";
 
 const workspaces = getWorkspaces();
 
@@ -28,50 +29,41 @@ runYarnInstallInStore();
 hidrateYarnLockFile();
 
 // 6 - Setup links from the repo to the store
-linkRepoNodeModuleFoldersToStore();
-
 // 7 - Run  post-install scripts
-runPostInstallScripts();
+linkRepoNodeModuleFoldersToStore().then(runPostInstallScripts);
 
-function linkRepoNodeModuleFoldersToStore() {
-  setupDependencyBetweenWorkspaces();
-  setupExternalDependencies();
+async function linkRepoNodeModuleFoldersToStore() {
+  await setupDependencyBetweenWorkspaces();
+  await setupExternalDependencies();
 }
 
-function setupExternalDependencies() {
-  workspaces.forEach((workspace) => {
-    const pj = require(path.join(
+async function setupExternalDependencies(): Promise<void> {
+  return Promise.all(workspaces.map(async (workspace) => {
+    const pj = JSON.parse(fs.readFileSync(path.join(
       process.cwd(),
       workspace.location,
       "package.json"
-    ));
+    )).toString());
     const dependencies = new Set(
       [
         ...Object.keys(pj.dependencies || {}),
         ...Object.keys(pj.devDependencies || {}),
       ].filter((n) => !workspaces.find((w) => w.name === n))
     );
-    dependencies.forEach((d) => {
-      const resolvedDependency = fs.realpathSync(
-        path.dirname(
-          require.resolve(`${d}/package.json`, {
-            paths: [
-              path.join(
-                process.cwd(),
-                "node_modules",
-                ".store",
-                workspace.location
-              ),
-            ],
-          })
-        )
-      );
+
+    await Promise.all([...dependencies.values()].map(async (d) => {
+      const localPath = path.join(process.cwd(), "node_modules", ".store", workspace.location, "node_modules", d, "package.json");
+      const hoistedPath = path.join(process.cwd(), "node_modules", ".store", "node_modules", d, "package.json");
+
+      const resolvedPath = fs.existsSync(localPath) ? localPath : hoistedPath;
+
+      const resolvedDependency = fs.realpathSync(path.dirname(resolvedPath));
 
       setupDependencySymlink(workspace, d, resolvedDependency);
 
-      setupBinScripts(resolvedDependency, d, workspace);
-    });
-  });
+      await setupBinScripts(resolvedDependency, d, workspace);
+    }));
+  })).then(() => {});
 }
 
 function setupDependencySymlink(
@@ -96,9 +88,9 @@ function setupDependencySymlink(
   fs.symlinkSync(resolvedDependency, symlink, "junction");
 }
 
-function setupDependencyBetweenWorkspaces() {
-  workspaces.forEach((workspace) => {
-    workspace.dependencies.forEach((d) => {
+async function setupDependencyBetweenWorkspaces() {
+  await Promise.all(workspaces.map(async (workspace) => {
+    await Promise.all(workspace.dependencies.map(async (d) => {
       const localDependencyLocation = path.join(process.cwd(), d.location);
       const symlink = path.join(
         process.cwd(),
@@ -110,18 +102,19 @@ function setupDependencyBetweenWorkspaces() {
 
       fs.symlinkSync(localDependencyLocation, symlink, "junction");
 
-      setupBinScripts(localDependencyLocation, d.name, workspace);
-    });
-  });
+      await setupBinScripts(localDependencyLocation, d.name, workspace);
+    }));
+  }));
 }
 
 function setupBinScripts(
   dependencyLocation: string,
   dependencyName: string,
   workspace: Workspace
-) {
-  const bin = require(`${dependencyLocation}/package.json`).bin;
+): Promise<void> {
+  const bin = JSON.parse(fs.readFileSync(`${dependencyLocation}/package.json`).toString()).bin;
 
+  const promises: Promise<any>[] = [];
   // Install bin
   if (bin) {
     // Implicit script names get calculated from the package name.
@@ -137,13 +130,8 @@ function setupBinScripts(
     );
     Object.keys(binObject).forEach((b) => {
       const binName = b;
-      const binLocationForSh = `"$basedir/${path
-        .relative(
-          path.join(process.cwd(), workspace.location, "node_modules", ".bin"),
-          path.join(dependencyLocation, binObject[b])
-        )
-        .replace(/\\/g, "/")}"`;
-      const binLocation = path.join(dependencyLocation, binObject[b]);
+      const binLocation = path.join(dependencyLocation, binObject[binName]);
+      if (!fs.existsSync(binLocation)) { return; }
 
       const shBin = path.join( process.cwd(),
           workspace.location,
@@ -152,25 +140,10 @@ function setupBinScripts(
           `${binName}`
         );
 
-      fs.writeFileSync(
-        shBin,
-        `#!/bin/sh
-basedir=$(dirname "$(echo "$0" | sed -e 's,\\\\,/,g')")
-node ${binLocationForSh} "$@"`
-      );
-      fs.chmodSync(shBin, 0o777);
-      fs.writeFileSync(
-        path.join(
-          process.cwd(),
-          workspace.location,
-          "node_modules",
-          ".bin",
-          `${binName}.cmd`
-        ),
-        `node ${binLocation} %*`
-      );
+      promises.push(cmdShim(binLocation, shBin, {}).catch(err => console.error(err)));
     });
   }
+  return Promise.all(promises).then(() => {});
 }
 
 function hidrateYarnLockFile() {
@@ -244,8 +217,8 @@ function copyRepoLayoutToStore() {
   fs.mkdirSync(path.join("node_modules", ".store"), { recursive: true });
 
   // Copy main package.json without lifecycle scripts to the store
-  const rootPJ = require(path.join(process.cwd(), "package.json"));
-  lifecycleScripts = rootPJ.scripts;
+  const rootPJ = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json")).toString());
+  lifecycleScripts = rootPJ.scripts || {};
   rootPJ.scripts = {};
   fs.writeFileSync(
     path.join("node_modules", ".store", "package.json"),

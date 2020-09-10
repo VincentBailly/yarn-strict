@@ -9,7 +9,7 @@
       "preserveWatchOutput": true,
       "rootDir": "./src",
       "outDir": "./lib",
-      "module": "commonjs",
+      "module": "ESNext",
       "skipLibCheck": true,
     },
     "include": ["./src"]

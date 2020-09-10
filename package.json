@@ -2,19 +2,22 @@
   "name": "yarn-strict",
   "version": "0.1.7",
   "bin": "bin/index.js",
-  "main": "lib/index.js",
+  "main": "index.js",
   "author": "Vincent Bailly <vincent.bailly@microsoft.com>",
   "license": "MIT",
   "repository": "VincentBailly/yarn-strict",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && webpack",
     "watch": "tsc --watch",
-    "test": "yarn tsc && node test/test.js",
-    "build-dist": "yarn tsc && node buildDist.js"
+    "test": "yarn build && node test/test.js",
+    "build-dist": "yarn build && node buildDist.js"
   },
   "devDependencies": {
     "@types/node": "^12.0.0",
+    "@zkochan/cmd-shim": "^5.0.0",
+    "prettier": "^2.1.1",
     "typescript": "^4.0.2",
-    "prettier": "^2.1.1"
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
   }
 }

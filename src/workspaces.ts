@@ -1,5 +1,6 @@
 import { execSync } from "child_process";
 import * as path from "path";
+import * as fs from "fs";
 
 export type Workspace = {
   location: string;
@@ -31,7 +32,7 @@ export function getWorkspaces(): Workspace[] {
     )
   );
 
-  const aggregatorPJ = require(path.join(process.cwd(), "package.json"));
+  const aggregatorPJ = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json")).toString());
   const localDependencies = [
     ...new Set(
       [
