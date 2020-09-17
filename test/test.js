@@ -1,42 +1,45 @@
 const child_process = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const tempy = require("tempy");
 
-process.chdir(__dirname);
+createTestRepoAndGotoIt();
 
 console.log("##### TESTING INSTALLATION PROCESS ######");
 
 shouldFail("args are passed to yarn cli", () => {
-  child_process.execSync("npx .. sdfgsdfg", { stdio: "ignore" });
+  child_process.execSync(`npx ${path.join(__dirname, "..")} sdfgsdfg`, { stdio: "ignore" });
 });
 
+createTestRepoAndGotoIt();
+
 shouldWork("install", () => {
-  child_process.execSync("git clean -fdx && npx ..");
+  child_process.execSync(`npx ${path.join(__dirname, "..")}`);
 });
 
 shouldWork("install a second time", () => {
-  child_process.execSync("npx ..");
+  child_process.execSync(`npx ${path.join(__dirname, "..")}`);
 });
 
 console.log();
 console.log("##### TESTING REQUIRING DEPENDENCIES ######");
 
 shouldWork("root dependencies are installed", () => {
-  require("@types/node/package.json");
+  require.resolve("@types/node/package.json", { paths: [process.cwd()] });
 });
 
 shouldFail("dependencies of a workspace are not accessible from root", () => {
-  require("lodash");
+  require.resolve("lodash", { paths: [process.cwd()] });
 });
 
 shouldWork("root dependencies to workspace should resolve", () => {
-  require("B/package.json");
+  require.resolve("B/package.json", { paths: [process.cwd()] });
 });
 
 shouldFail(
   "undeclared dependencies from root to workspace don't resolve",
   () => {
-    require("A/package.json");
+    require.resolve("A/package.json", { paths: [process.cwd()] });
   }
 );
 
@@ -170,4 +173,29 @@ function shouldFail(name, fn) {
   } catch {
     console.log(`SUCCESS: ${name}`);
   }
+}
+
+function createTestRepoAndGotoIt() {
+  const filesToCopy = getFilesInDir(__dirname);
+
+  function getFilesInDir(dir) {
+    const toCopy = [];
+    const files = fs.readdirSync(dir);
+    files.forEach(f => {
+      const p = path.join(dir, f);
+      if (fs.statSync(p).isFile()) {
+        toCopy.push(path.relative(__dirname,p));
+      } else {
+        toCopy.push(...getFilesInDir(p));
+      }
+    })
+    return toCopy;
+  }
+
+  const tmpDir = tempy.directory();
+  filesToCopy.forEach(f => {
+    fs.mkdirSync(path.dirname(path.join(tmpDir,f)), { recursive: true });
+    fs.copyFileSync(path.join(__dirname, f), path.join(tmpDir, f))
+  });
+  process.chdir(tmpDir);
 }
