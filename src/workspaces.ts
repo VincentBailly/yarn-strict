@@ -27,9 +27,12 @@ export function getWorkspaces(): Workspace[] {
   });
 
   Object.keys(raw).forEach((k, i) =>
-    result[i].dependencies.push(
-      ...raw[k].workspaceDependencies.map((n) => result[invertedResult[n]])
-    )
+    {
+      result[i].dependencies.push(
+        ...raw[k].workspaceDependencies.map((n) => result[invertedResult[n]])
+      )
+      result[i].dependencies.push(result[i]);
+    }
   );
 
   const aggregatorPJ = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json")).toString());

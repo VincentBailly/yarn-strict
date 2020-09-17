@@ -49,6 +49,12 @@ shouldWork("declared dependencies between internal-packages work", () => {
   });
 });
 
+shouldWork("a package can import itself", () => {
+  require.resolve("A/package.json", {
+    paths: [path.join(process.cwd(), "packages", "A")],
+  });
+});
+
 shouldWork(
   "declared dependencies between internal-packages with scoped name work",
   () => {
