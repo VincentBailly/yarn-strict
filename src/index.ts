@@ -52,8 +52,8 @@ async function setupExternalDependencies(): Promise<void> {
     );
 
     await Promise.all([...dependencies.values()].map(async (d) => {
-      const localPath = path.join(process.cwd(), "node_modules", ".store", workspace.location, "node_modules", d, "package.json");
-      const hoistedPath = path.join(process.cwd(), "node_modules", ".store", "node_modules", d, "package.json");
+      const localPath = path.join(process.cwd(), ".yarnStore", workspace.location, "node_modules", d, "package.json");
+      const hoistedPath = path.join(process.cwd(), ".yarnStore", "node_modules", d, "package.json");
 
       const resolvedPath = fs.existsSync(localPath) ? localPath : hoistedPath;
 
@@ -148,20 +148,12 @@ function setupBinScripts(
 
 function hidrateYarnLockFile() {
   fs.copyFileSync(
-    path.join(process.cwd(), "node_modules", ".store", "yarn.lock"),
+    path.join(process.cwd(), ".yarnStore", "yarn.lock"),
     path.join(process.cwd(), "yarn.lock")
   );
 }
 
 function cleanNodeModuleFolders() {
-  const storePath = path.join(process.cwd(), "node_modules", ".store");
-  const incremental = fs.existsSync(storePath);
-
-  if (incremental) {
-    // move store to temporary place so it is not cleaned;
-    fs.renameSync(storePath, path.join(process.cwd(), ".tmpYarnStore"));
-  }
-
   workspaces.forEach((workspace) => {
     const oldNodeModuleFolder = path.join(
       process.cwd(),
@@ -172,16 +164,6 @@ function cleanNodeModuleFolders() {
       fs.rmdirSync(oldNodeModuleFolder, { recursive: true });
     }
   });
-
-  if (incremental) {
-    fs.mkdirSync(path.join(process.cwd(), "node_modules"));
-
-    // move back store
-    fs.renameSync(
-      path.join(process.cwd(), ".tmpYarnStore"),
-      path.join(process.cwd(), "node_modules", ".store")
-    );
-  }
 }
 
 function runPostInstallScripts() {
@@ -202,7 +184,7 @@ function runPostInstallScripts() {
 function runYarnInstallInStore() {
   execSync(`npx midgard-yarn install ${process.argv.slice(2).join(" ")}`, {
     stdio: "inherit",
-    cwd: path.join(process.cwd(), "node_modules", ".store"),
+    cwd: path.join(process.cwd(), ".yarnStore"),
   });
 }
 
@@ -214,21 +196,21 @@ function runPreInstallScript() {
 }
 
 function copyRepoLayoutToStore() {
-  fs.mkdirSync(path.join("node_modules", ".store"), { recursive: true });
+  fs.mkdirSync(".yarnStore", { recursive: true });
 
   // Copy main package.json without lifecycle scripts to the store
   const rootPJ = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json")).toString());
   lifecycleScripts = rootPJ.scripts || {};
   rootPJ.scripts = {};
   fs.writeFileSync(
-    path.join("node_modules", ".store", "package.json"),
+    path.join(".yarnStore", "package.json"),
     JSON.stringify(rootPJ)
   );
 
   // Copy lock file to the store
   fs.copyFileSync(
     "yarn.lock",
-    path.join("node_modules", ".store", "yarn.lock")
+    path.join(".yarnStore", "yarn.lock")
   );
 
   // Duplicate workspaces layout in the store
@@ -236,12 +218,12 @@ function copyRepoLayoutToStore() {
     if (workspace.name === "yarnWorkspaceAggregator") {
       return;
     }
-    fs.mkdirSync(path.join("node_modules", ".store", workspace.location), {
+    fs.mkdirSync(path.join(".yarnStore", workspace.location), {
       recursive: true,
     });
     fs.copyFileSync(
       path.join(workspace.location, "package.json"),
-      path.join("node_modules", ".store", workspace.location, "package.json")
+      path.join(".yarnStore", workspace.location, "package.json")
     );
   });
 }
