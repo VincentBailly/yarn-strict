@@ -48,7 +48,7 @@ async function setupExternalDependencies(): Promise<void> {
       [
         ...Object.keys(pj.dependencies || {}),
         ...Object.keys(pj.devDependencies || {}),
-      ].filter((n) => !workspaces.find((w) => w.name === n))
+      ].filter((n) => !workspace.dependencies.map(w => w.name).includes(n))
     );
 
     await Promise.all([...dependencies.values()].map(async (d) => {
