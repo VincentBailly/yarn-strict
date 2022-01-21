@@ -91,9 +91,11 @@ function setupDependencySymlink(
 async function setupDependenciesFromExternalToWorkspace() {
   await Promise.all(workspaces.map(async (workspace) => {
     const localWorkspaceLocation = path.join(process.cwd(), workspace.location);
-    const hoistedWorkspaceLocation = path.join(process.cwd(), ".yarnStore", workspace.location);
+    const hoistedWorkspaceLocation = path.join(process.cwd(), ".yarnStore", "node_modules", workspace.name);
+    try {
     fs.unlinkSync(hoistedWorkspaceLocation)
     fs.symlinkSync(localWorkspaceLocation, hoistedWorkspaceLocation, "junction")
+    } catch {}
   }));
 }
 
