@@ -1,6 +1,6 @@
 {
   "name": "yarn-strict",
-  "version": "0.1.11",
+  "version": "0.1.15",
   "bin": "bin/index.js",
   "main": "index.js",
   "author": "Vincent Bailly <vincent.bailly@microsoft.com>",

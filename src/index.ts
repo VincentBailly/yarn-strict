@@ -34,6 +34,7 @@ linkRepoNodeModuleFoldersToStore().then(runPostInstallScripts);
 
 async function linkRepoNodeModuleFoldersToStore() {
   await setupDependencyBetweenWorkspaces();
+  await setupDependenciesFromExternalToWorkspace();
   await setupExternalDependencies();
 }
 
@@ -48,7 +49,7 @@ async function setupExternalDependencies(): Promise<void> {
       [
         ...Object.keys(pj.dependencies || {}),
         ...Object.keys(pj.devDependencies || {}),
-      ].filter((n) => !workspaces.find((w) => w.name === n))
+      ].filter((n) => !workspace.dependencies.map(w => w.name).includes(n))
     );
 
     await Promise.all([...dependencies.values()].map(async (d) => {
@@ -86,6 +87,16 @@ function setupDependencySymlink(
   );
 
   fs.symlinkSync(resolvedDependency, symlink, "junction");
+}
+async function setupDependenciesFromExternalToWorkspace() {
+  await Promise.all(workspaces.map(async (workspace) => {
+    const localWorkspaceLocation = path.join(process.cwd(), workspace.location);
+    const hoistedWorkspaceLocation = path.join(process.cwd(), ".yarnStore", "node_modules", workspace.name);
+    try {
+    fs.unlinkSync(hoistedWorkspaceLocation)
+    fs.symlinkSync(localWorkspaceLocation, hoistedWorkspaceLocation, "junction")
+    } catch {}
+  }));
 }
 
 async function setupDependencyBetweenWorkspaces() {
